@@ -1,11 +1,11 @@
+#!/usr/bin/python
 
-from ctypes import *
+from ctypes import (
+    c_int, c_void_p, c_ulong, c_char_p, CDLL, c_ulonglong, CFUNCTYPE,
+    Structure, POINTER, cast, c_double, RTLD_GLOBAL)
 import threading
 import os
 import asyncio
-from warnings import warn
-
-# vim: ts=4 sw=4
 
 
 backend = CDLL('libmpv.so')
@@ -17,35 +17,35 @@ class MpvHandle(c_void_p):
 
 class ErrorCode:
     """ For documentation on these, see mpv's libmpv/client.h """
-    SUCCESS                 = 0
-    EVENT_QUEUE_FULL        = -1
-    NOMEM                   = -2
-    UNINITIALIZED           = -3
-    INVALID_PARAMETER       = -4
-    OPTION_NOT_FOUND        = -5
-    OPTION_FORMAT           = -6
-    OPTION_ERROR            = -7
-    PROPERTY_NOT_FOUND      = -8
-    PROPERTY_FORMAT         = -9
-    PROPERTY_UNAVAILABLE    = -10
-    PROPERTY_ERROR          = -11
-    COMMAND                 = -12
+    SUCCESS = 0
+    EVENT_QUEUE_FULL = -1
+    NOMEM = -2
+    UNINITIALIZED = -3
+    INVALID_PARAMETER = -4
+    OPTION_NOT_FOUND = -5
+    OPTION_FORMAT = -6
+    OPTION_ERROR = -7
+    PROPERTY_NOT_FOUND = -8
+    PROPERTY_FORMAT = -9
+    PROPERTY_UNAVAILABLE = -10
+    PROPERTY_ERROR = -11
+    COMMAND = -12
 
     EXCEPTION_DICT = {
-             0:     None,
-            -1:     lambda *a: MemoryError('mpv event queue full', *a),
-            -2:     lambda *a: MemoryError('mpv cannot allocate memory', *a),
-            -3:     lambda *a: ValueError('Uninitialized mpv handle used', *a),
-            -4:     lambda *a: ValueError('Invalid value for mpv parameter', *a),
-            -5:     lambda *a: AttributeError('mpv option does not exist', *a),
-            -6:     lambda *a: TypeError('Tried to set mpv option using wrong format', *a),
-            -7:     lambda *a: ValueError('Invalid value for mpv option', *a),
-            -8:     lambda *a: AttributeError('mpv property does not exist', *a),
-            -9:     lambda *a: TypeError('Tried to set mpv property using wrong format', *a),
-            -10:    lambda *a: AttributeError('mpv property is not available', *a),
-            -11:    lambda *a: ValueError('Invalid value for mpv property', *a),
-            -12:    lambda *a: SystemError('Error running mpv command', *a)
-        }
+        0: None,
+        -1: lambda *a: MemoryError('mpv event queue full', *a),
+        -2: lambda *a: MemoryError('mpv cannot allocate memory', *a),
+        -3: lambda *a: ValueError('Uninitialized mpv handle used', *a),
+        -4: lambda *a: ValueError('Invalid value for mpv parameter', *a),
+        -5: lambda *a: AttributeError('mpv option does not exist', *a),
+        -6: lambda *a: TypeError('Tried to set mpv option using wrong format', *a),
+        -7: lambda *a: ValueError('Invalid value for mpv option', *a),
+        -8: lambda *a: AttributeError('mpv property does not exist', *a),
+        -9: lambda *a: TypeError('Tried to set mpv property using wrong format', *a),
+        -10: lambda *a: AttributeError('mpv property is not available', *a),
+        -11: lambda *a: ValueError('Invalid value for mpv property', *a),
+        -12: lambda *a: SystemError('Error running mpv command', *a)
+    }
 
     @classmethod
     def DEFAULT_ERROR_HANDLER(ec, *args):
@@ -54,53 +54,57 @@ class ErrorCode:
     @classmethod
     def raise_for_ec(kls, func, *args):
         ec = func(*args)
-        ex = kls.EXCEPTION_DICT.get(ec , kls.DEFAULT_ERROR_HANDLER)
+        ex = kls.EXCEPTION_DICT.get(ec, kls.DEFAULT_ERROR_HANDLER)
         if ex:
             raise ex(ec, *args)
 
 
 class MpvFormat(c_int):
-    NONE        = 0
-    STRING      = 1
-    OSD_STRING  = 2
-    FLAG        = 3
-    INT64       = 4
-    DOUBLE      = 5
-    NODE        = 6
-    NODE_ARRAY  = 7
-    NODE_MAP    = 8
+    NONE = 0
+    STRING = 1
+    OSD_STRING = 2
+    FLAG = 3
+    INT64 = 4
+    DOUBLE = 5
+    NODE = 6
+    NODE_ARRAY = 7
+    NODE_MAP = 8
 
 
 class MpvEventID(c_int):
-    NONE                    = 0
-    SHUTDOWN                = 1
-    LOG_MESSAGE             = 2
-    GET_PROPERTY_REPLY      = 3
-    SET_PROPERTY_REPLY      = 4
-    COMMAND_REPLY           = 5
-    START_FILE              = 6
-    END_FILE                = 7
-    FILE_LOADED             = 8
-    TRACKS_CHANGED          = 9
-    TRACK_SWITCHED          = 10
-    IDLE                    = 11
-    PAUSE                   = 12
-    UNPAUSE                 = 13
-    TICK                    = 14
-    SCRIPT_INPUT_DISPATCH   = 15
-    CLIENT_MESSAGE          = 16
-    VIDEO_RECONFIG          = 17
-    AUDIO_RECONFIG          = 18
-    METADATA_UPDATE         = 19
-    SEEK                    = 20
-    PLAYBACK_RESTART        = 21
-    PROPERTY_CHANGE         = 22
-    CHAPTER_CHANGE          = 23
+    NONE = 0
+    SHUTDOWN = 1
+    LOG_MESSAGE = 2
+    GET_PROPERTY_REPLY = 3
+    SET_PROPERTY_REPLY = 4
+    COMMAND_REPLY = 5
+    START_FILE = 6
+    END_FILE = 7
+    FILE_LOADED = 8
+    TRACKS_CHANGED = 9
+    TRACK_SWITCHED = 10
+    IDLE = 11
+    PAUSE = 12
+    UNPAUSE = 13
+    TICK = 14
+    SCRIPT_INPUT_DISPATCH = 15
+    CLIENT_MESSAGE = 16
+    VIDEO_RECONFIG = 17
+    AUDIO_RECONFIG = 18
+    METADATA_UPDATE = 19
+    SEEK = 20
+    PLAYBACK_RESTART = 21
+    PROPERTY_CHANGE = 22
+    CHAPTER_CHANGE = 23
 
-    ANY = ( SHUTDOWN, LOG_MESSAGE, GET_PROPERTY_REPLY, SET_PROPERTY_REPLY, COMMAND_REPLY, START_FILE, END_FILE,
-            FILE_LOADED, TRACKS_CHANGED, TRACK_SWITCHED, IDLE, PAUSE, UNPAUSE, TICK, SCRIPT_INPUT_DISPATCH,
-            CLIENT_MESSAGE, VIDEO_RECONFIG, AUDIO_RECONFIG, METADATA_UPDATE, SEEK, PLAYBACK_RESTART, PROPERTY_CHANGE,
-            CHAPTER_CHANGE )
+    ANY = (
+        SHUTDOWN, LOG_MESSAGE, GET_PROPERTY_REPLY, SET_PROPERTY_REPLY,
+        COMMAND_REPLY, START_FILE, END_FILE, FILE_LOADED, TRACKS_CHANGED,
+        TRACK_SWITCHED, IDLE, PAUSE, UNPAUSE, TICK, SCRIPT_INPUT_DISPATCH,
+        CLIENT_MESSAGE, VIDEO_RECONFIG, AUDIO_RECONFIG, METADATA_UPDATE, SEEK,
+        PLAYBACK_RESTART, PROPERTY_CHANGE, CHAPTER_CHANGE
+    )
+
 
 class MpvEvent(Structure):
     _fields_ = [('event_id', MpvEventID),
@@ -109,24 +113,30 @@ class MpvEvent(Structure):
                 ('data', c_void_p)]
 
     def as_dict(self):
-        dtype = {MpvEventID.END_FILE:               MpvEventEndFile,
-                MpvEventID.PROPERTY_CHANGE:         MpvEventProperty,
-                MpvEventID.GET_PROPERTY_REPLY:      MpvEventProperty,
-                MpvEventID.LOG_MESSAGE:             MpvEventLogMessage,
-                MpvEventID.SCRIPT_INPUT_DISPATCH:   MpvEventScriptInputDispatch,
-                MpvEventID.CLIENT_MESSAGE:          MpvEventClientMessage
-            }.get(self.event_id.value, None)
-        return {'event_id': self.event_id.value,
-                'error': self.error,
-                'reply_userdata': self.reply_userdata,
-                'event': cast(self.data, POINTER(dtype)).contents.as_dict() if dtype else None}
+        dtype = {
+            MpvEventID.END_FILE: MpvEventEndFile,
+            MpvEventID.PROPERTY_CHANGE: MpvEventProperty,
+            MpvEventID.GET_PROPERTY_REPLY: MpvEventProperty,
+            MpvEventID.LOG_MESSAGE: MpvEventLogMessage,
+            MpvEventID.SCRIPT_INPUT_DISPATCH: MpvEventScriptInputDispatch,
+            MpvEventID.CLIENT_MESSAGE: MpvEventClientMessage
+        }.get(self.event_id.value, None)
+        return {
+            'event_id': self.event_id.value,
+            'error': self.error,
+            'reply_userdata': self.reply_userdata,
+            'event': cast(self.data, POINTER(dtype)).contents.as_dict() if dtype else None
+        }
+
 
 class MpvEventProperty(Structure):
     _fields_ = [('name', c_char_p),
                 ('format', MpvFormat),
                 ('data', c_void_p)]
+
     def as_dict():
-        pass # FIXME
+        pass  # FIXME
+
 
 class MpvEventLogMessage(Structure):
     _fields_ = [('prefix', c_char_p),
@@ -134,30 +144,33 @@ class MpvEventLogMessage(Structure):
                 ('text', c_char_p)]
 
     def as_dict(self):
-        return { name: getattr(self, name).value for name, _t in _fields_ }
+        return {name: getattr(self, name).value for name, _t in _fields_}
+
 
 class MpvEventEndFile(c_int):
     EOF_OR_INIT_FAILURE = 0
-    RESTARTED           = 1
-    ABORTED             = 2
-    QUIT                = 3
+    RESTARTED = 1
+    ABORTED = 2
+    QUIT = 3
 
     def as_dict(self):
         return {'reason': self.value}
+
 
 class MpvEventScriptInputDispatch(Structure):
     _fields_ = [('arg0', c_int),
                 ('type', c_char_p)]
 
     def as_dict(self):
-        pass # TODO
+        pass  # TODO
+
 
 class MpvEventClientMessage(Structure):
     _fields_ = [('num_args', c_int),
                 ('args', POINTER(c_char_p))]
 
     def as_dict(self):
-        return { 'args': [ self.args[i].value for i in range(self.num_args.value) ] }
+        return {'args': [self.args[i].value for i in range(self.num_args.value)]}
 
 WakeupCallback = CFUNCTYPE(None, c_void_p)
 
@@ -177,7 +190,7 @@ def _handle_func(name, args=[], res=None):
 backend.mpv_client_api_version.restype = c_ulong
 def _mpv_client_api_version():
     ver = backend.mpv_client_api_version()
-    return ver>>16, ver&0xFFFF
+    return ver >> 16, ver & 0xFFFF
 
 backend.mpv_free.argtypes = [c_void_p]
 _mpv_free = backend.mpv_free
@@ -240,6 +253,7 @@ class ynbool:
     def __repr__(self):
         return str(self.val)
 
+
 def _ensure_encoding(possibly_bytes):
     return possibly_bytes.decode() if type(possibly_bytes) is bytes else possibly_bytes
 
@@ -251,10 +265,12 @@ def _event_generator(handle):
             raise StopIteration()
         yield event
 
+
 def load_lua():
     """ Use this function if you intend to use mpv's built-in lua interpreter. This is e.g. needed for playback of
     youtube urls. """
     CDLL('liblua.so', mode=RTLD_GLOBAL)
+
 
 class MPV:
     """ See man mpv(1) for the details of the implemented commands. """
@@ -262,7 +278,7 @@ class MPV:
         """ Create an MPV instance. You should pass in an asyncio event loop that will  handle the mpv event queue via
         the evloop argument. If you do not pass in one, one will be created for you and run in a freshly spawned thread
         (works for prototypes but is likely not what you want).
-        
+
         Any kwargs given will be passed to mpv as options. """
 
         self.handle = _mpv_create()
@@ -270,6 +286,7 @@ class MPV:
         self.event_callbacks = []
         self._event_fd = _mpv_get_wakeup_pipe(self.handle)
         self._playback_cond = threading.Condition()
+
         def mpv_event_extractor():
             os.read(self._event_fd, 512)
             for event in _event_generator(self.handle):
@@ -279,6 +296,7 @@ class MPV:
                         self._playback_cond.notify_all()
                 for callback in self.event_callbacks:
                     callback.call()
+
         if evloop:
             evloop.add_reader(self._event_fd, mpv_event_extractor)
         else:
@@ -295,10 +313,11 @@ class MPV:
 
         _mpv_set_option_string(self.handle, b'audio-display', b'no')
         istr = lambda o: ('yes' if o else 'no') if type(o) is bool else str(o)
-        for k,v in kwargs.items():
+
+        for k, v in kwargs.items():
             _mpv_set_option_string(self.handle, k.replace('_', '-').encode(), istr(v).encode())
         _mpv_initialize(self.handle)
-    
+
     def wait_for_playback(self):
         """ Waits until playback of the current title is paused or done """
         with self._playback_cond:
@@ -309,14 +328,14 @@ class MPV:
 
     def command(self, name, *args):
         """ Execute a raw command """
-        args = [name.encode()] + [ str(arg).encode() for arg in args if arg is not None ] + [None]
+        args = [name.encode()] + [str(arg).encode() for arg in args if arg is not None] + [None]
         _mpv_command(self.handle, (c_char_p*len(args))(*args))
 
     def seek(self, amount, reference="relative", precision="default-precise"):
         self.command('seek', amount, reference, precision)
 
     def revert_seek(self):
-        self.command('revert_seek');
+        self.command('revert_seek')
 
     def frame_step(self):
         self.command('frame_step')
@@ -326,10 +345,10 @@ class MPV:
 
     def _set_property(self, name, value):
         self.command('set_property', name, str(value))
-    
+
     def _add_property(self, name, value=None):
         self.command('add_property', name, value)
-    
+
     def _cycle_property(self, name, direction='up'):
         self.command('cycle_property', name, direction)
 
@@ -362,7 +381,7 @@ class MPV:
 
     def playlist_move(self, index1, index2):
         self.command('playlist_move', index1, index2)
-    
+
     def run(self, command, *args):
         self.command('run', command, *args)
 
@@ -380,10 +399,10 @@ class MPV:
 
     def sub_reload(self, sub_id=None):
         self.command('sub_reload', sub_id)
-    
+
     def sub_step(self, skip):
         self.command('sub_step', skip)
-    
+
     def sub_seek(self, skip):
         self.command('sub_seek', skip)
 
@@ -398,13 +417,13 @@ class MPV:
 
     def discnav(self, command):
         self.command('discnav', command)
-    
+
     def write_watch_later_config(self):
         self.command('write_watch_later_config')
-    
+
     def overlay_add(self, overlay_id, x, y, file_or_fd, offset, fmt, w, h, stride):
         self.command('overlay_add', overlay_id, x, y, file_or_fd, offset, fmt, w, h, stride)
-    
+
     def overlay_remove(self, overlay_id):
         self.command('overlay_remove', overlay_id)
 
@@ -413,7 +432,7 @@ class MPV:
 
     def script_message_to(self, target, *args):
         self.command('script_message_to', target, *args)
-    
+
     @property
     def metadata(self):
         raise NotImplementedError
@@ -423,7 +442,7 @@ class MPV:
 
     def vf_metadata(self):
         raise NotImplementedError
-    
+
     # Convenience functions
     def play(self, filename):
         self.loadfile(filename)
@@ -454,6 +473,7 @@ class MPV:
     @property
     def playlist(self):
         return self._get_list('playlist/', (('filename', str),))
+
     @property
     def track_list(self):
         return self._get_list('track-list/', (
@@ -468,29 +488,33 @@ class MPV:
                          ('external-filename',  str),
                          ('codec',              str),
                          ('selected',           ynbool)))
+
     @property
     def chapter_list(self):
         return self._get_dict('chapter-list/', (('title', str), ('time', float)))
 
     def _get_dict(self, prefix, props):
-        return { name: proptype(_ensure_encoding(_mpv_get_property_string(self.handle, (prefix+name).encode()))) for name, proptype in props }
+        return {name: proptype(_ensure_encoding(_mpv_get_property_string(self.handle, (prefix+name).encode()))) for name, proptype in props}
 
     def _get_list(self, prefix, props):
         count = int(_ensure_encoding(_mpv_get_property_string(self.handle, (prefix+'count').encode())))
-        return [ self._get_dict(prefix+str(index)+'/', props) for index in range(count)]
-            
+        return [self._get_dict(prefix+str(index)+'/', props) for index in range(count)]
+
     # TODO: af, vf properties
     # TODO: edition-list
     # TODO property-mapped options
 
-    
+
 def bindproperty(MPV, name, proptype, access):
     def getter(self):
         return proptype(_ensure_encoding(_mpv_get_property_string(self.handle, name.encode())))
+
     def setter(self, value):
         _mpv_set_property_string(self.handle, name.encode(), str(proptype(value)).encode())
+
     def barf(*args):
         raise NotImplementedError('Access denied')
+
     setattr(MPV, name.replace('-', '_'), property(getter if 'r' in access else barf, setter if 'w' in access else barf))
 
 for name, proptype, access in (
@@ -526,7 +550,7 @@ for name, proptype, access in (
         ('pause',                       ynbool, 'rw'),
         ('core-idle',                   ynbool, 'r'),
         ('cache',                       int,    'r'),
-        ('cache-size'    ,              int,    'rw'),
+        ('cache-size',                  int,    'rw'),
         ('pause-for-cache',             ynbool, 'r'),
         ('eof-reached',                 ynbool, 'r'),
         ('pts-association-mode',        str,    'rw'),
@@ -602,4 +626,3 @@ for name, proptype, access in (
         ('quvi-format',                 str,    'rw'),
         ('seekable',                    ynbool, 'r')):
     bindproperty(MPV, name, proptype, access)
-
