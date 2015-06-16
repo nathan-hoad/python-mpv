@@ -570,7 +570,7 @@ for name, proptype, access in (
         ('path',                        str,    'r'),
         ('pause',                       ynbool, 'rw'),
         ('pause-for-cache',             ynbool, 'r'),
-        ('percent-pos',                 int,    'rw'),
+        ('percent-pos',                 float,    'rw'),
         ('playlist-count',              int,    'r'),
         ('playlist-pos',                int,    'rw'),
         ('playtime-remaining',          float,  'r'),
