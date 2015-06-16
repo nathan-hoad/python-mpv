@@ -494,7 +494,10 @@ class MPV:
 
 def bindproperty(MPV, name, proptype, access):
     def getter(self):
-        return proptype(_ensure_encoding(_mpv_get_property_string(self.handle, name.encode())))
+        res = _mpv_get_property_string(self.handle, name.encode())
+        if res is None:
+            raise AttributeError('{} is not available (no video playing?)'.format(name))
+        return proptype(_ensure_encoding(res))
 
     def setter(self, value):
         _mpv_set_property_string(self.handle, name.encode(), str(proptype(value)).encode())
