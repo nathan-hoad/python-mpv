@@ -47,13 +47,13 @@ class ErrorCode:
     }
 
     @classmethod
-    def DEFAULT_ERROR_HANDLER(ec, *args):
-        return ValueError(_mpv_error_string(ec).decode(), ec, *a)
+    def default_error_handler(ec, *args):
+        return ValueError(_mpv_error_string(ec).decode(), ec, *args)
 
     @classmethod
     def raise_for_ec(kls, func, *args):
         ec = func(*args)
-        ex = kls.EXCEPTION_DICT.get(ec, kls.DEFAULT_ERROR_HANDLER)
+        ex = kls.EXCEPTION_DICT.get(ec, kls.default_error_handler)
         if ex:
             raise ex(ec, *args)
 
@@ -134,7 +134,7 @@ class MpvEventProperty(Structure):
                 ('data', c_void_p)]
 
     def as_dict():
-        pass  # FIXME
+        return {name: getattr(self, name).value for name, _t in self._fields_}
 
 
 class MpvEventLogMessage(Structure):
@@ -143,7 +143,7 @@ class MpvEventLogMessage(Structure):
                 ('text', c_char_p)]
 
     def as_dict(self):
-        return {name: getattr(self, name).value for name, _t in _fields_}
+        return {name: getattr(self, name).value for name, _t in self._fields_}
 
 
 class MpvEventEndFile(c_int):
@@ -451,11 +451,11 @@ class MPV:
 
     @property
     def video_params(self):
-        return self._get_dict('video-params/', _VIDEO_PARAMS_LIST)
+        return self._get_dict('video-params/', self._VIDEO_PARAMS_LIST)
 
     @property
     def video_out_params(self):
-        return self._get_dict('video-out-params/', _VIDEO_PARAMS_LIST)
+        return self._get_dict('video-out-params/', self._VIDEO_PARAMS_LIST)
 
     @property
     def playlist(self):
