@@ -310,8 +310,8 @@ class MPV:
         with (yield from self._playback_cond):
             yield from self._playback_cond.wait()
 
-#   def __del__(self):
-#       _mpv_terminate_destroy(self.handle)
+    def __del__(self):
+        _mpv_terminate_destroy(self.handle)
 
     def command(self, name, *args):
         """ Execute a raw command """
